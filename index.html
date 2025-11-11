@@ -1,0 +1,596 @@
+ html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mines Prediction Tool (Hybrid)</title>
+    <!-- Font Awesome for icons (Telegram, YouTube) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #ffffff;
+            --primary-glow: #00f7ff; /* Neon blue/cyan for highlights */
+            --safe-glow: #39ff14; /* Neon green */
+            --unsafe-glow: #ff073a; /* Neon red */
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --button-bg: rgba(255, 255, 255, 0.15);
+            --border-color: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            /* New colors from your second code for the modal and game */
+            --modal-bg-dark: #1c1c1c;
+            --tile-default-bg: #2d2d2d;
+            --start-button-color: #00b894;
+            --bomb-reveal-color: #ff3f34;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* For particle background or gradients */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Animated background (simple example) */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            z-index: 0;
+            opacity: 0.6;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: linear-gradient(135deg, var(--glass-bg), rgba(255, 255, 255, 0.03));
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px 0 var(--shadow-color);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 30px;
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            color: var(--primary-glow);
+            text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow);
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .controls-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .left-controls, .right-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-group {
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-group select,
+        .input-group input[type="text"],
+        .input-group input[type="number"] { /* Added number input styling */
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--button-bg);
+            color: var(--text-color);
+            font-size: 1em;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="%23ffffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+        }
+
+        .input-group select:focus,
+        .input-group input[type="text"]:focus,
+        .input-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        .action-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--primary-glow) 0%, #a200ff 100%);
+            color: var(--text-color);
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.4);
+            font-weight: bold;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px var(--primary-glow), 0 0 25px var(--primary-glow);
+        }
+
+        .reset-button {
+            background: linear-gradient(135deg, #ff073a 0%, #a200ff 100%);
+            box-shadow: 0 0 10px rgba(255, 7, 58, 0.4);
+        }
+
+        .reset-button:hover {
+            box-shadow: 0 0 15px #ff073a, 0 0 25px #ff073a;
+        }
+
+        /* Grid styling based on first tool, modified for game logic */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin: 40px auto;
+            max-width: 500px;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .grid-tile { /* Combined with .tile from second code */
+            width: 60px;
+            height: 60px;
+            background: var(--tile-default-bg); /* Default background from second code */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8em; /* Slightly adjusted to fit */
+            cursor: pointer;
+            color: transparent; /* Hide content by default */
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-tile:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .grid-tile.revealed { /* Renamed from .tile.safe to .revealed.safe for clarity */
+            color: var(--text-color);
+            animation: popIn 0.3s ease-out forwards;
+        }
+
+        .grid-tile.safe { /* Updated from second code's .safe */
+            background: var(--safe-glow); /* Green background for safe */
+            border-color: var(--safe-glow);
+            box-shadow: 0 0 15px var(--safe-glow);
+            animation: safeGlow 1.5s infinite alternate, popIn 0.3s ease-out forwards;
+            color: var(--text-color); /* Ensure diamond is visible */
+        }
+
+        .grid-tile.unsafe { /* Updated from second code's bomb reveal */
+            background: var(--bomb-reveal-color); /* Red background for unsafe */
+            border-color: var(--unsafe-glow);
+            box-shadow: 0 0 15px var(--unsafe-glow);
+            animation: popIn 0.3s ease-out forwards;
+            color: var(--text-color); /* Ensure bomb is visible */
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes safeGlow { /* Retained from first tool, modified for consistency */
+            0% { box-shadow: 0 0 10px var(--safe-glow); }
+            100% { box-shadow: 0 0 25px var(--safe-glow), 0 0 40px var(--safe-glow); }
+        }
+
+        /* Social Buttons */
+        .social-buttons {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .social-button {
+            display: flex;
+            align-items: center;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1em;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .social-button i {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .social-button.telegram {
+            background: linear-gradient(135deg, #0088cc 0%, #00aaff 100%);
+            box-shadow: 0 0 10px rgba(0, 136, 204, 0.5);
+        }
+
+        .social-button.telegram:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px #0088cc, 0 0 25px #0088cc;
+        }
+
+        .social-button.youtube {
+            background: linear-gradient(135deg, #ff0000 0%, #ff5555 100%);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+
+        .social-button.youtube:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 15px #ff0000, 0 0 25px #ff0000;
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Modal specific styles (from second code, adapted for existing theme) */
+        #modal-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100; /* Higher z-index to overlay everything */
+        }
+
+        #modal-box {
+            background: var(--modal-bg-dark); /* Darker background */
+            padding: 25px;
+            border-radius: 12px;
+            width: 320px;
+            text-align: center;
+            animation: pop 0.3s ease-out;
+            color: white;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px 0 var(--shadow-color);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #modal-box input {
+            width: calc(80% - 20px); /* Adjust for padding */
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--button-bg);
+            color: var(--text-color);
+            margin-top: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        #modal-box button.modal-start-button { /* Differentiated button class */
+            width: 100%;
+            padding: 12px;
+            border: none;
+            margin-top: 20px;
+            border-radius: 8px;
+            background: var(--start-button-color);
+            font-size: 18px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #modal-box button.modal-start-button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2.2em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .controls-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .left-controls, .right-controls {
+                width: 100%;
+            }
+
+            .action-button {
+                width: 100%;
+            }
+
+            .grid-tile {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5em;
+            }
+
+            .social-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .social-button {
+                width: 80%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid-container {
+                gap: 10px;
+                padding: 10px;
+            }
+            .grid-tile {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3em;
+            }
+            #modal-box {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="platform-display">Stake</h1>
+            <p>MINES PREDICTION TOOL</p>
+        </div>
+
+        <div class="controls-section">
+            <div class="left-controls">
+                <div class="input-group">
+                    <label for="platform-selector">Game Platform Selector</label>
+                    <select id="platform-selector">
+                        <option value="Stake">Stake</option>
+                        <option value="1win">1win</option>
+                        <option value="Tashan Win">Tashan Win</option>
+                        <option value="Bet365">Bet365</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="safeInput">Enter Number of Safe Mines (1-24)</label>
+                    <input type="number" id="safeInput" min="1" max="24" value="5" />
+                </div>
+                <button id="predict-button" class="action-button">Start Mine Game</button>
+            </div>
+            <div class="right-controls">
+                <button id="reset-button" class="action-button reset-button">Reset Game</button>
+            </div>
+        </div>
+
+        <div class="grid-container" id="grid">
+            <!-- Tiles will be generated by JavaScript -->
+        </div>
+
+        <div class="social-buttons">
+            <a href="https://t.me/" target="_blank" class="social-button telegram">
+                <i class="fab fa-telegram-plane"></i> Join Telegram
+            </a>
+            <a href="https://www.youtube.com/" target="_blank" class="social-button youtube">
+                <i class="fab fa-youtube"></i> Join YouTube
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>⚡ Created by Fun Education</p>
+        </div>
+    </div>
+
+    <!-- Modal (from your second code, now hidden by default and activated by "Start Mine Game") -->
+    <div id="modal-bg" style="display: none;">
+      <div id="modal-box">
+        <h2>Set Up Minefield</h2>
+        <p>Number of safe mines: <span id="modalSafeCountDisplay">5</span></p>
+        <button class="modal-start-button" onclick="startGameFromModal()">Confirm & Start</button>
+      </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridContainer = document.getElementById('grid'); // Changed from .grid-container to #grid
+            const predictButton = document.getElementById('predict-button');
+            const resetButton = document.getElementById('reset-button');
+            const platformSelector = document.getElementById('platform-selector');
+            const platformDisplay = document.getElementById('platform-display');
+            const safeInput = document.getElementById('safeInput'); // Now controls safe mine count
+            const modalBg = document.getElementById('modal-bg');
+            const modalSafeCountDisplay = document.getElementById('modalSafeCountDisplay');
+
+            const totalTiles = 25;
+            let currentSafeCount = 5; // Default safe mines
+            let tilesData = []; // Stores 'safe' or 'bomb' for each tile
+
+            // --- Utility functions for seeded randomness (from first tool) ---
+            function sfc32(a, b, c, d) {
+                return function() {
+                    a |= 0; b |= 0; c |= 0; d |= 0;
+                    var t = (a + b | 0) + d | 0;
+                    d = c;
+                    c = b;
+                    b = a;
+                    a = (t ^ t >>> 9) >>> 0;
+                    return (t >>> 0) / 4294967296;
+                };
+            }
+            function hashString(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash |= 0;
+                }
+                return hash;
+            }
+            // --- End Utility functions ---
+
+            // Function to create the grid elements (adapted from second tool, integrated into first's visuals)
+            function createGameGrid(safeMinesNum) {
+                gridContainer.innerHTML = ''; // Clear existing tiles
+                tilesData = []; // Reset game data
+
+                for (let i = 0; i < totalTiles; i++) tilesData.push('bomb');
+
+                // Using the seeded random for initial placement based on the input safe count
+                // (Note: This is still deterministic pseudo-random, not true prediction based on game servers)
+                const seedValue = "gameSeed" + Date.now(); // Simple dynamic seed for each game start
+                let seededRandom = sfc32(0x9E3779B9, 0x243F6A88, 0x93C467E3, hashString(seedValue));
+
+                for (let i = 0; i < safeMinesNum; i++) {
+                    let pos;
+                    do {
+                        pos = Math.floor(seededRandom() * totalTiles);
+                    } while (tilesData[pos] === 'safe');
+                    tilesData[pos] = 'safe';
+                }
+
+                tilesData.forEach((type, index) => {
+                    const div = document.createElement('div');
+                    div.classList.add('grid-tile'); // Use the first tool's tile class
+                    div.dataset.index = index; // Store index
+
+                    div.onclick = () => {
+                        // Prevent clicking already revealed tiles
+                        if (div.classList.contains('safe') || div.classList.contains('unsafe')) {
+                            return;
+                        }
+
+                        if (type === 'safe') {
+                            div.classList.add('safe');
+                            div.innerText = '💎';
+                        } else {
+                            div.classList.add('unsafe');
+                            div.innerText = '💣';
+                        }
+                    };
+                    gridContainer.appendChild(div);
+                });
+            }
+
+            // Function to reset the game state
+            function resetGame() {
+                const tiles = document.querySelectorAll('.grid-tile');
+                tiles.forEach(tile => {
+                    tile.classList.remove('safe', 'unsafe');
+                    tile.innerHTML = '';
+                    tile.style.background = 'var(--tile-default-bg)'; // Reset background
+                    tile.style.borderColor = 'rgba(255, 255, 255, 0.1)'; // Reset border
+                    tile.style.boxShadow = 'none'; // Clear shadow
+                });
+                tilesData = []; // Clear game data
+                createGameGrid(currentSafeCount); // Re-initialize the grid with current safe count
+            }
+
+            // --- Event Listeners and Logic ---
+
+            // "Start Mine Game" button (repurposed from "Predict Safe Mines")
+            predictButton.addEventListener('click', () => {
+                let inputSafeCount = parseInt(safeInput.value);
+                if (isNaN(inputSafeCount) || inputSafeCount < 1 || inputSafeCount > 24) {
+                    alert("Please enter a valid number of safe mines between 1 and 24.");
+                    return;
+                }
+                currentSafeCount = inputSafeCount; // Update the current safe count
+                modalSafeCountDisplay.textContent = currentSafeCount;
+                modalBg.style.display = 'flex'; // Show the modal
+            });
+
+            // "Confirm & Start" button inside the modal
+            window.startGameFromModal = () => { // Made global to be accessible via onclick in HTML
+                modalBg.style.display = 'none'; // Hide the modal
+                resetGame(); // Reset and start a new game with the currentSafeCount
+            };
+
+            resetButton.addEventListener('click', resetGame);
+
+            platformSelector.addEventListener('change', (event) => {
+                platformDisplay.textContent = event.target.value;
+            });
+
+            // Initial setup - create an empty grid on load
+            createGameGrid(currentSafeCount);
+        });
+    </script>
+</body>
+</
